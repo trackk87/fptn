@@ -1,0 +1,43 @@
+name: Build FPTN OpenWrt 25.12.5 mipsel_24kc
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg PKG_VERSION=0.0.0 \
+            --build-arg JOBS=4 \
+            -t fptn-openwrt-mipsel \
+            -f deploy/openwrt/target-ramips-mt7621/25.12.5/Dockerfile \
+            .
+
+      - name: Extract APK
+        run: |
+          mkdir -p output
+          docker run --rm \
+            -v "$PWD/output:/dst" \
+            fptn-openwrt-mipsel \
+            cp -av /out/. /dst/
+
+      - name: Show APK
+        run: |
+          echo "=== Packages ==="
+          find output -type f -name '*.apk' -print
+          echo "=== File information ==="
+          file output/*.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fptn-openwrt-25.12.5-mipsel_24kc
+          path: output/*.apk
