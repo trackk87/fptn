@@ -239,19 +239,19 @@ jobs:
           submodules: true
           fetch-depth: 0
       - name: Set env
-        shell: powershell
+        shell: bash
         if: github.event_name == 'release'
         run: |
           $releaseVersion = "${{ github.ref_name }}"
           echo "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
           echo "FPTN_VERSION=$releaseVersion" >> $env:GITHUB_ENV
       - name: Print Release Version
-        shell: powershell
+        shell: bash
         if: github.event_name == 'release'
         run: |
           Write-Output "Release Version: $env:RELEASE_VERSION"
       - name: Set dev version
-        shell: powershell
+        shell: bash
         if: github.event_name != 'release'
         run: |
           git config --global --add safe.directory "$env:GITHUB_WORKSPACE"
@@ -262,38 +262,38 @@ jobs:
           echo "FPTN_VERSION=$devVersion" >> $env:GITHUB_ENV
           Write-Output "Dev version: $devVersion"
       - name: Install dependencies
-        shell: powershell
+        shell: bash
         run: |
           conan install . --output-folder=build --build=missing -o with_gui_client=True --settings build_type=Release -s compiler.cppstd=17
       - name: Run cpplint
         run: |
           python cpplint.py --recursive --filter=-build/c++17,-whitespace/newline,-readability/braces --counting=total ./src/ ./tests/
       - name: Run cppcheck
-        shell: powershell
+        shell: bash
         run: |
           cppcheck --force --error-exitcode=1 --enable=all --check-level=exhaustive --language=c++ --suppress=unusedFunction --inline-suppr --suppress=missingIncludeSystem --suppress=unknownMacro --suppress=unmatchedSuppression -I ./src/fptn-client/ -I ./src/fptn-server/ -I ./src/fptn-passwd/ -I ./src/fptn-client-protocol-lib -I ./src/  ./src/ ./tests/
       - name: Run cmake-format
-        shell: powershell
+        shell: bash
         run: |
           cmake-format -i CMakeLists.txt src/fptn-client/CMakeLists.txt src/fptn-passwd/CMakeLists.txt src/fptn-server/CMakeLists.txt src/fptn-protocol-lib/CMakeLists.txt depends/cmake/FetchBase64.cmake depends/cmake/FetchLibTunTap.cmake depends/cmake/FetchWintun.cmake
       - name: Build
-        shell: powershell
+        shell: bash
         run: |
           cd build
           cmake .. -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release
       - name: Test
-        shell: powershell
+        shell: bash
         run: |
           cd build
           ctest -C Release
       - name: Build Windows installer
-        shell: powershell
+        shell: bash
         run: |
           cd build
           cmake --build . --config Release -- build-installer
       - name: Zip the .exe
-        shell: powershell
+        shell: bash
         run: |
           $exePath = Get-ChildItem -Path "." -Filter "FptnClientInstaller-*-windows-x64_x86.exe" | Select-Object -First 1
           Compress-Archive -Path $exePath.FullName -DestinationPath "FptnClientInstaller-$env:RELEASE_VERSION-windows-x64_x86.zip"
@@ -324,27 +324,27 @@ jobs:
           submodules: true
           fetch-depth: 0
       - name: Set env
-        shell: powershell
+        shell: bash
         if: github.event_name == 'release'
         run: |
           $releaseVersion = "${{ github.ref_name }}"
           echo "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
           echo "FPTN_VERSION=$releaseVersion" >> $env:GITHUB_ENV
       - name: Set dev version
-        shell: powershell
+        shell: bash
         if: github.event_name != 'release'
         run: |
           echo "FPTN_VERSION=0.0.0" >> $env:GITHUB_ENV
           Write-Output "Dev version: 0.0.0"
       - name: Build OpenWrt package
-        shell: powershell
+        shell: bash
         run: |
           docker build `
             --build-arg PKG_VERSION="$env:FPTN_VERSION" `
             -t "fptn-openwrt-${{ matrix.target }}-${{ matrix.version }}" `
             -f "./deploy/openwrt/target-${{ matrix.target }}/${{ matrix.version }}/Dockerfile" .
       - name: Extract package
-        shell: powershell
+        shell: bash
         run: |
           docker run --rm -v "$($PWD.Path):/dst" "fptn-openwrt-${{ matrix.target }}-${{ matrix.version }}" cp -av /out/. /dst/
       - name: Upload apk RELEASE
