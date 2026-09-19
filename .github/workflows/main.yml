@@ -138,8 +138,8 @@ jobs:
       - name: Build Debian package
         run: |
           cd build
-          cmake --build . --target build-deb
-          cmake --build . --target build-deb-gui
+          cmake --build . -- build-deb
+          cmake --build . -- build-deb-gui
       - name: Upload deb
         if: github.event_name == 'release'
         uses: AButler/upload-release-assets@v3.0
@@ -216,7 +216,7 @@ jobs:
       - name: Build MacOS pkg
         run: |
           cd build
-          cmake --build . --target build-pkg
+          cmake --build . -- build-pkg
       - name: Upload macOS pkg
         if: github.event_name == 'release'
         uses: AButler/upload-release-assets@v3.0
@@ -291,7 +291,7 @@ jobs:
         shell: powershell
         run: |
           cd build
-          cmake --build . --config Release --target build-installer
+          cmake --build . --config Release -- build-installer
       - name: Zip the .exe
         shell: powershell
         run: |
@@ -315,7 +315,7 @@ jobs:
     runs-on: Docker_AMD64
     strategy:
       matrix:
-        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64]
+        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64, ramips-mt7621]
         version: ['25.12.5', '24.10.7']
     steps:
       - name: Checkout code
