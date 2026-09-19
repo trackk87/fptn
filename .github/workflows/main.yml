@@ -312,7 +312,7 @@ jobs:
           if-no-files-found: warn
 
   build_openwrt:
-    runs-on: Docker_AMD64
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64, ramips-mt7621]
