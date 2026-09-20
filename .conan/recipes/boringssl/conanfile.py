@@ -29,6 +29,7 @@ class BoringSSLConan(ConanFile):
 
         tc.variables["BUILD_TESTING"] = False
         tc.variables["ENABLE_EXPRESSION_TESTS"] = False
+        tc.variables["OPENSSL_NO_ASM"] = True
 
         tc.variables["CMAKE_C_FLAGS"] = (
         "-Wno-error "
