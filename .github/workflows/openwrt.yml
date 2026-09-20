@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Target (e.g. armsr-armv8, mediatek-filogic, ipq40xx, x86-64)'
+        description: 'Target (e.g. armsr-armv8, mediatek-filogic, ipq40xx, x86-64, ramips-mt7621)'
         required: false
       version:
         description: 'OpenWrt version (e.g. 25.12.5, 24.10.7)'
