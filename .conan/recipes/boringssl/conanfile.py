@@ -28,8 +28,8 @@ class BoringSSLConan(ConanFile):
         tc = CMakeToolchain(self)
         tc.variables["BUILD_TESTING"] = False
         tc.variables["ENABLE_EXPRESSION_TESTS"] = False
-        tc.variables["CMAKE_C_FLAGS"] = "-Wno-error=stringop-overflow"
-        tc.variables["CMAKE_CXX_FLAGS"] = "-Wno-error=stringop-overflow"
+        tc.variables["CMAKE_C_FLAGS"] = "-Wno-error"
+        tc.variables["CMAKE_CXX_FLAGS"] = "-Wno-error"
 
         # Apple mobile platforms need explicit SDK settings when cross-building.
         if self.settings.os in ["iOS", "tvOS"]:
