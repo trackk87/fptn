@@ -1,13 +1,7 @@
 name: Build and Test
 
 on:
-  push:
-    branches:
-      - '**'
-    tags:
-      - '*'
-  release:
-    types: [ published ]
+  workflow_dispatch:
 env:
   DOCKER_REGISTRY: fptnvpn
   IMAGE_NAME: fptn-vpn-server
@@ -138,8 +132,8 @@ jobs:
       - name: Build Debian package
         run: |
           cd build
-          cmake --build . -- build-deb
-          cmake --build . -- build-deb-gui
+          cmake --build . --target build-deb
+          cmake --build . --target build-deb-gui
       - name: Upload deb
         if: github.event_name == 'release'
         uses: AButler/upload-release-assets@v3.0
@@ -216,7 +210,7 @@ jobs:
       - name: Build MacOS pkg
         run: |
           cd build
-          cmake --build . -- build-pkg
+          cmake --build . --target build-pkg
       - name: Upload macOS pkg
         if: github.event_name == 'release'
         uses: AButler/upload-release-assets@v3.0
@@ -291,7 +285,7 @@ jobs:
         shell: powershell
         run: |
           cd build
-          cmake --build . --config Release -- build-installer
+          cmake --build . --config Release --target build-installer
       - name: Zip the .exe
         shell: powershell
         run: |
@@ -312,10 +306,10 @@ jobs:
           if-no-files-found: warn
 
   build_openwrt:
-    runs-on: ubuntu-24.04
+    runs-on: Docker_AMD64
     strategy:
       matrix:
-        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64, ramips-mt7621]
+        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64]
         version: ['25.12.5', '24.10.7']
     steps:
       - name: Checkout code
@@ -324,27 +318,27 @@ jobs:
           submodules: true
           fetch-depth: 0
       - name: Set env
-        shell: bash
+        shell: powershell
         if: github.event_name == 'release'
         run: |
           $releaseVersion = "${{ github.ref_name }}"
           echo "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
           echo "FPTN_VERSION=$releaseVersion" >> $env:GITHUB_ENV
-     - name: Set dev version
-  shell: bash
-  if: github.event_name != 'release'
-  run: |
-    echo "FPTN_VERSION=0.0.0" >> $GITHUB_ENV
-    echo "Dev version: 0.0.0"
+      - name: Set dev version
+        shell: powershell
+        if: github.event_name != 'release'
+        run: |
+          echo "FPTN_VERSION=0.0.0" >> $env:GITHUB_ENV
+          Write-Output "Dev version: 0.0.0"
       - name: Build OpenWrt package
-        shell: bash
+        shell: powershell
         run: |
           docker build `
             --build-arg PKG_VERSION="$env:FPTN_VERSION" `
             -t "fptn-openwrt-${{ matrix.target }}-${{ matrix.version }}" `
             -f "./deploy/openwrt/target-${{ matrix.target }}/${{ matrix.version }}/Dockerfile" .
       - name: Extract package
-        shell: bash
+        shell: powershell
         run: |
           docker run --rm -v "$($PWD.Path):/dst" "fptn-openwrt-${{ matrix.target }}-${{ matrix.version }}" cp -av /out/. /dst/
       - name: Upload apk RELEASE
