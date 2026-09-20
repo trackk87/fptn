@@ -1,0 +1,141 @@
+name: Build OpenWrt Packages (Multi-Arch)
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    tags:
+      - 'v*'
+      - '[0-9]*'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target (e.g. armsr-armv8, mediatek-filogic, ipq40xx, x86-64)'
+        required: false
+      version:
+        description: 'OpenWrt version (e.g. 25.12.5, 24.10.7)'
+        required: false
+      tag:
+        description: 'Release tag override (e.g. v0.4.6)'
+        required: false
+      publish_release:
+        description: 'Publish release (default: true)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  meta:
+    name: Determine version and tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: v
+        name: Read package version
+        run: |
+          if [ -n "${{ github.ref_name }}" ] && echo "${{ github.ref }}" | grep -q 'refs/tags/'; then
+            RAW="${{ github.ref_name }}"
+            VER="${RAW#v}"
+            TAG="v$VER"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            RAW="${{ inputs.tag }}"
+            VER="${RAW#v}"
+            TAG="v$VER"
+          else
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.4.6")
+            VER="${TAG#v}"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "FPTN version: $VER, tag: $TAG"
+
+  build_openwrt:
+    name: build (${{ matrix.target }}, ${{ matrix.version }})
+    needs: meta
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64]
+        version: ['25.12.5', '24.10.7']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Set package version
+        shell: bash
+        run: |
+          VER="${{ needs.meta.outputs.version }}"
+          echo "FPTN_VERSION=${VER}" >> $GITHUB_ENV
+          echo "Building FPTN version: ${VER}"
+
+      - name: Build OpenWrt package with Docker
+        shell: bash
+        run: |
+          docker build \
+            --build-arg PKG_VERSION="${FPTN_VERSION}" \
+            -t "fptn-openwrt-${{ matrix.target }}-${{ matrix.version }}" \
+            -f "./deploy/openwrt/target-${{ matrix.target }}/${{ matrix.version }}/Dockerfile" .
+
+      - name: Extract package
+        shell: bash
+        run: |
+          mkdir -p dist
+          docker run --rm -v "$(pwd)/dist:/dst" "fptn-openwrt-${{ matrix.target }}-${{ matrix.version }}" cp -av /out/. /dst/
+          ls -la dist/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt-${{ matrix.target }}-${{ matrix.version }}
+          path: |
+            dist/*.apk
+            dist/*.ipk
+          if-no-files-found: error
+
+  release:
+    name: Publish Release
+    needs: [meta, build_openwrt]
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure') && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_assets
+          merge-multiple: true
+
+      - name: Prepare release files and checksums
+        working-directory: release_assets
+        run: |
+          ls -la
+          sha256sum *.apk *.ipk 2>/dev/null > SHA256SUMS || sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.meta.outputs.tag }}
+          name: ${{ needs.meta.outputs.tag }}
+          files: |
+            release_assets/*.apk
+            release_assets/*.ipk
+            release_assets/SHA256SUMS
+          generate_release_notes: true
