@@ -4,7 +4,7 @@ FROM --platform=linux/amd64 ubuntu:24.04 AS builder
 
 ARG TOOLCHAIN_DIR=toolchain-mipsel_24kc_gcc-14.3.0_musl
 ARG CROSS_PREFIX=mipsel-openwrt-linux-musl
-ARG CONAN_ARCH=mipsel
+ARG CONAN_ARCH=mips
 ARG CONAN_GCC_VERSION=14
 ARG JOBS=4
 ARG PKG_ARCH=mipsel_24kc
