@@ -30,6 +30,7 @@ class BoringSSLConan(ConanFile):
         tc.variables["ENABLE_EXPRESSION_TESTS"] = False
         tc.variables["CMAKE_C_FLAGS"] = "-Wno-error"
         tc.variables["CMAKE_CXX_FLAGS"] = "-Wno-error"
+        tc.variables["OPENSSL_NO_ASM"] = True
 
         # Apple mobile platforms need explicit SDK settings when cross-building.
         if self.settings.os in ["iOS", "tvOS"]:
