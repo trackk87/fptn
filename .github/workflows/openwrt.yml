@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64]
+        target: [armsr-armv8, mediatek-filogic, ipq40xx, x86-64, ramips-mt7621]
         version: ['25.12.5', '24.10.7']
     steps:
       - name: Checkout code
@@ -80,6 +80,11 @@ jobs:
           VER="${{ needs.meta.outputs.version }}"
           echo "FPTN_VERSION=${VER}" >> $GITHUB_ENV
           echo "Building FPTN version: ${VER}"
+      - name: Inspect MT7621 SDK
+        if: matrix.target == 'ramips-mt7621' && matrix.version == '25.12.5'
+        run: |
+          docker run --rm openwrt/sdk:ramips-mt7621-25.12.5 \
+            sh -c 'echo "=== staging_dir ==="; ls -la /builder/staging_dir; echo "=== toolchains ==="; find /builder/staging_dir -maxdepth 1 -type d -name "toolchain-*" -print'  
 
       - name: Build OpenWrt package with Docker
         shell: bash
