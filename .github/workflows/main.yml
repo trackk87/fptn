@@ -330,12 +330,12 @@ jobs:
           $releaseVersion = "${{ github.ref_name }}"
           echo "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
           echo "FPTN_VERSION=$releaseVersion" >> $env:GITHUB_ENV
-      - name: Set dev version
-        shell: bash
-        if: github.event_name != 'release'
-        run: |
-          echo "FPTN_VERSION=0.0.0" >> $env:GITHUB_ENV
-          Write-Output "Dev version: 0.0.0"
+     - name: Set dev version
+  shell: bash
+  if: github.event_name != 'release'
+  run: |
+    echo "FPTN_VERSION=0.0.0" >> $GITHUB_ENV
+    echo "Dev version: 0.0.0"
       - name: Build OpenWrt package
         shell: bash
         run: |
